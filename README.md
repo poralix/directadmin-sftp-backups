@@ -14,7 +14,7 @@ backups over SSH using SFTP.
 
 Alex Grebenschikov, Poralix, (www.poralix.com), 2018
 
-## PLUGIN VERSION
+## Version
 
 - Version: Version: 0.1.poralix $ Tue Jan 30 12:43:50 +07 2018
 - Last modified: Tue Jan 30 12:43:50 +07 2018
