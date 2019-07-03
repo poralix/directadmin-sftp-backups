@@ -10,7 +10,7 @@ A set of patched scripts to allow Directadmin to
 
 backups over SSH using SFTP.
 
-## Author of paches
+## Author of patches
 
 Alex Grebenschikov, Poralix, (www.poralix.com), 2018
 
