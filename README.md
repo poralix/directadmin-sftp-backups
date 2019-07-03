@@ -61,3 +61,15 @@ Go to directadmin `Admin login -> Admin Backup/Transfer` and set:
 The script will detect the specified port **22** and will use SFTP to connect to SSH port. 
 If you want FTP/FTPS just change port to 21 and update other credentials (the same script 
 can be used for FTP/FTPS/SSH/SFTP).
+
+If you run sFTP, SSH on a different port modify the scripts and your port to the line:
+
+```
+SSH_PORTS="22 2200 22022";
+```
+
+The line exists in all 3 files:
+
+- ftp_download.php
+- ftp_list.php
+- ftp_upload.php
