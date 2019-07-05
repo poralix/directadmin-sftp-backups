@@ -5,8 +5,8 @@
 # Patched:
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
-#  Last modified: Tue Jan 30 12:43:50 +07 2018
-#  Version: 0.1.poralix $ Tue Jan 30 12:43:50 +07 2018
+#  Last modified: Fri Jul  5 13:16:22 +07 2019
+#  Version: 0.2.poralix $ Fri Jul  5 13:16:22 +07 2019
 # ===========================================================
 
 FTPLS=/usr/bin/ncftpls
@@ -96,7 +96,7 @@ list_files_ssh()
 		echo "[list] sftp return code: $RET";
 		cat ${DUMP};
 	else
-		cat ${DUMP} | grep -v '^sftp> ' | grep -E '^(admin|reseller|user)\.(.*)\.tar(|\.gz)$';
+		cat ${DUMP} | grep -v '^sftp> ' | grep -E '^(admin|reseller|user)\.(.*)\.tar(|\.gz)(|\.enc)$';
 	fi
 }
 # Poralix
