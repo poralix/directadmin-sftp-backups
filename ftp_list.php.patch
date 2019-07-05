@@ -1,5 +1,5 @@
 --- a/ftp_list.php	2019-06-20 06:54:05.000000000 +0700
-+++ b/ftp_list.php	2019-07-05 13:17:13.125857538 +0700
++++ b/ftp_list.php	2019-07-06 01:00:56.000000000 +0700
 @@ -1,4 +1,13 @@
  #!/bin/sh
 +# ===========================================================
@@ -76,7 +76,7 @@
 +		echo "[list] sftp return code: $RET";
 +		cat ${DUMP};
 +	else
-+		cat ${DUMP} | grep -v '^sftp> ' | grep -E '^(admin|reseller|user)\.(.*)\.tar(|\.gz)(|\.enc)$';
++		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.tar(|\.gz)(|\.enc)$';
 +	fi
 +}
 +# Poralix

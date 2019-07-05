@@ -96,7 +96,7 @@ list_files_ssh()
 		echo "[list] sftp return code: $RET";
 		cat ${DUMP};
 	else
-		cat ${DUMP} | grep -v '^sftp> ' | grep -E '^(admin|reseller|user)\.(.*)\.tar(|\.gz)(|\.enc)$';
+		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.tar(|\.gz)(|\.enc)$';
 	fi
 }
 # Poralix
