@@ -6,7 +6,7 @@
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
 #  Last modified: Tue Jan 30 12:43:50 +07 2018
-#  Version: 0.1.poralix $ Tue Jan 30 12:43:50 +07 2018
+#  Version: 0.2.poralix $ Fri Jul  5 13:16:22 +07 2019
 # ===========================================================
 
 TMPDIR="/home/tmp";

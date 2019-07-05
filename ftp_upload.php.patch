@@ -1,5 +1,5 @@
 --- a/ftp_upload.php	2019-06-20 06:49:28.000000000 +0700
-+++ b/ftp_upload.php	2019-07-03 10:32:49.312236547 +0700
++++ b/ftp_upload.php	2019-07-05 13:17:24.052910490 +0700
 @@ -1,4 +1,13 @@
  #!/bin/sh
 +# ===========================================================
@@ -9,7 +9,7 @@
 +#  sFTP/SSH support added
 +#  By Alex Grebenschikov, Poralix, www.poralix.com
 +#  Last modified: Tue Jan 30 12:43:50 +07 2018
-+#  Version: 0.1.poralix $ Tue Jan 30 12:43:50 +07 2018
++#  Version: 0.2.poralix $ Fri Jul  5 13:16:22 +07 2019
 +# ===========================================================
  FTPPUT=/usr/bin/ncftpput
  CURL=/usr/local/bin/curl
