@@ -9,7 +9,7 @@
 +#  sFTP/SSH support added
 +#  By Alex Grebenschikov, Poralix, www.poralix.com
 +#  Last modified: Fri Jul  5 13:16:22 +07 2019
-+#  Version: 0.2.poralix $ Fri Jul  5 13:16:22 +07 2019
++#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
 +# ===========================================================
  
  FTPLS=/usr/bin/ncftpls
