@@ -5,10 +5,9 @@
 # Patched:
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
-#  Last modified: Thu Sep 12 23:55:18 +07 2019
-#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
+#  Last modified: Tue Jan 30 12:43:50 +07 2018
+#  Version: 0.2.poralix $ Fri Jul  5 13:16:22 +07 2019
 # ===========================================================
-VERSION=1.2
 FTPPUT=/usr/bin/ncftpput
 CURL=/usr/local/bin/curl
 OS=`uname`;
@@ -173,45 +172,37 @@ if [ -x ${DU} ]; then
 fi
 
 #######################################################
-# FTPS
-upload_file_ftp()
+# FTP
+upload_file()
 {
-        if [ ! -e ${CURL} ]; then
-                CURL=/usr/bin/curl
-        fi
+	if [ ! -e $FTPPUT ]; then
+		echo "";
+		echo "*** Backup not uploaded ***";
+		echo "Please install $FTPPUT by running:";
+		echo "";
+		echo "cd /usr/local/directadmin/scripts";
+		echo "./ncftp.sh";
+		echo "";
+		exit 10;
+	fi
 
-        if [ ! -e ${CURL} ]; then
-                echo "";
-                echo "*** Backup not uploaded ***";
-                echo "Please install curl by running:";
-                echo "";
-                echo "cd /usr/local/directadmin/custombuild";
-                echo "./build curl";
-                echo "";
-                exit 10;
-        fi
+	/bin/echo "host $ftp_ip" >> $CFG
+	/bin/echo "user $ftp_username" >> $CFG
+	/bin/echo "pass $ftp_password" >> $CFG
 
-        /bin/echo "user =  \"$ftp_username:$ftp_password\"" >> $CFG
+	if [ ! -s ${CFG} ]; then
+		echo "${CFG} is empty. ncftpput is not going to be happy about it.";
+		ls -la ${CFG}
+		ls -la ${ftp_local_file}
+		df -h
+	fi
 
-        if [ ! -s ${CFG} ]; then
-                echo "${CFG} is empty. curl is not going to be happy about it.";
-                ls -la ${CFG}
-                ls -la ${ftp_local_file}
-                df -h
-        fi
+	$FTPPUT -f $CFG -V -t ${TIMEOUT} -P $PORT -m "$ftp_path" "$ftp_local_file" 2>&1
+	RET=$?
 
-        #ensure ftp_path ends with /
-        ENDS_WITH_SLASH=`echo "$ftp_path" | grep -c '/$'`
-        if [ "${ENDS_WITH_SLASH}" -eq 0 ]; then
-                ftp_path=${ftp_path}/
-        fi
-
-        ${CURL} --config ${CFG} --silent --show-error --ftp-create-dirs --upload-file $ftp_local_file  ftp://$ftp_ip:${PORT}/$ftp_path$ftp_remote_file 2>&1
-        RET=$?
-
-        if [ "${RET}" -ne 0 ]; then
-                echo "curl return code: $RET";
-        fi
+	if [ "${RET}" -ne 0 ]; then
+		echo "ncftpput return code: $RET";
+	fi
 }
 
 #######################################################
@@ -265,7 +256,7 @@ else
 	if [ "${FTPS}" = "1" ]; then
 		upload_file_ftps
 	else
-		upload_file_ftp
+		upload_file
 	fi
 fi;
 

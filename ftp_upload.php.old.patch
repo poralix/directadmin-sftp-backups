@@ -1,5 +1,5 @@
---- a/ftp_upload-1.2.php	2019-07-30 16:46:50.000000000 +0700
-+++ b/ftp_upload-1.2.php	2019-09-13 00:02:04.204718764 +0700
+--- a/ftp_upload.php	2019-06-20 06:49:28.000000000 +0700
++++ b/ftp_upload.php	2019-07-05 13:17:24.052910490 +0700
 @@ -1,4 +1,13 @@
  #!/bin/sh
 +# ===========================================================
@@ -8,13 +8,13 @@
 +# Patched:
 +#  sFTP/SSH support added
 +#  By Alex Grebenschikov, Poralix, www.poralix.com
-+#  Last modified: Thu Sep 12 23:55:18 +07 2019
-+#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
++#  Last modified: Tue Jan 30 12:43:50 +07 2018
++#  Version: 0.2.poralix $ Fri Jul  5 13:16:22 +07 2019
 +# ===========================================================
- VERSION=1.2
  FTPPUT=/usr/bin/ncftpput
  CURL=/usr/local/bin/curl
-@@ -15,6 +24,67 @@
+ OS=`uname`;
+@@ -14,6 +23,67 @@
  	FTPS=1
  fi
  
@@ -82,7 +82,7 @@
  #######################################################
  # SETUP
  
-@@ -189,11 +259,15 @@
+@@ -180,11 +250,15 @@
  #######################################################
  # Start
  
@@ -91,18 +91,18 @@
 +if [ "${USE_SSH}" = "1" ]; then
 +	upload_file_ssh;
  else
--	upload_file_ftp
+-	upload_file
 -fi
 +	if [ "${FTPS}" = "1" ]; then
 +		upload_file_ftps
 +	else
-+		upload_file_ftp
++		upload_file
 +	fi
 +fi;
  
  if [ "${RET}" = "0" ] && [ "${MD5}" = "1" ]; then
  	MD5_FILE=${ftp_local_file}.md5
-@@ -204,11 +278,15 @@
+@@ -195,11 +269,15 @@
  		ftp_local_file=${MD5_FILE}
  		ftp_remote_file=${ftp_remote_file}.md5
  
