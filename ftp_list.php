@@ -5,17 +5,28 @@
 # Patched:
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
-#  Last modified: Fri Jul  5 13:16:22 +07 2019
-#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
+#  Last modified: Wed Dec 11 20:30:29 +07 2019
+#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
+#           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 # ===========================================================
 
 FTPLS=/usr/bin/ncftpls
 CURL=/usr/local/bin/curl
+if [ ! -e ${CURL} ]; then
+	CURL=/usr/bin/curl
+fi
 TMPDIR=/home/tmp
 PORT=${ftp_port}
 FTPS=0
 if [ "${ftp_secure}" = "ftps" ]; then
 	FTPS=1
+fi
+
+SSL_REQD=""
+if ${CURL} --help | grep -m1 -q 'ftp-ssl-reqd'; then
+    SSL_REQD="--ftp-ssl-reqd"
+elif ${CURL} --help | grep -m1 -q 'ssl-reqd'; then
+    SSL_REQD="--ssl-reqd"
 fi
 
 if [ "$PORT" = "" ]; then
@@ -101,7 +112,6 @@ list_files_ssh()
 }
 # Poralix
 
-
 #######################################################
 # FTP
 list_files()
@@ -162,10 +172,6 @@ list_files()
 list_files_ftps()
 {
 	if [ ! -e ${CURL} ]; then
-		CURL=/usr/bin/curl
-	fi
-
-	if [ ! -e ${CURL} ]; then
 		echo "";
 		echo "*** Unable to get list ***";
 		echo "Please install curl by running:";
@@ -183,9 +189,7 @@ list_files_ftps()
 
 	/bin/echo "user =  \"$ftp_username:$ftp_password\"" >> $CFG
 
-	#echo "${CURL} --config ${CFG} --ftp-ssl-reqd -k --silent --show-error --list-only ftp://$ftp_ip:${PORT}$ftp_path";
-
-	${CURL} --config ${CFG} --ftp-ssl-reqd -k --silent --show-error ftp://$ftp_ip:${PORT}$ftp_path/ > ${DUMP} 2>&1
+	${CURL} --config ${CFG} ${SSL_REQD} -k --silent --show-error ftp://$ftp_ip:${PORT}$ftp_path/ > ${DUMP} 2>&1
 	RET=$?
 
 	if [ "$RET" -ne 0 ]; then
@@ -195,8 +199,6 @@ list_files_ftps()
 		COLS=`awk '{print NF; exit}' $DUMP`
 		cat $DUMP | grep -v -e '^d' | awk "{ print \$${COLS}; }"
 	fi
-
-
 }
 
 

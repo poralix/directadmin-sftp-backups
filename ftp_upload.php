@@ -5,12 +5,15 @@
 # Patched:
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
-#  Last modified: Thu Sep 12 23:55:18 +07 2019
-#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
+#  Last modified: Wed Dec 11 20:30:29 +07 2019
+#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
+#           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 # ===========================================================
 VERSION=1.2
-FTPPUT=/usr/bin/ncftpput
 CURL=/usr/local/bin/curl
+if [ ! -e ${CURL} ]; then
+		CURL=/usr/bin/curl
+fi
 OS=`uname`;
 DU=/usr/bin/du
 BC=/usr/bin/bc
@@ -18,10 +21,19 @@ EXPR=/usr/bin/expr
 TOUCH=/bin/touch
 PORT=${ftp_port}
 FTPS=0
+MIN_TLS="--tlsv1.1"
+
 MD5=${ftp_md5}
 
 if [ "${ftp_secure}" = "ftps" ]; then
 	FTPS=1
+fi
+
+SSL_REQD=""
+if ${CURL} --help | grep -m1 -q 'ftp-ssl-reqd'; then
+    SSL_REQD="--ftp-ssl-reqd"
+elif ${CURL} --help | grep -m1 -q 'ssl-reqd'; then
+    SSL_REQD="--ssl-reqd"
 fi
 
 # Poralix
@@ -40,6 +52,21 @@ do
 		break;
 	fi;
 done;
+
+create_ftp_folders()
+{
+	local loc_ftp_path;
+	local loc_ftp_dir;
+	loc_ftp_path="$@";
+	while [[ "${loc_ftp_path}" != "${loc_ftp_dir}" ]] ; do
+		loc_ftp_dir=${loc_ftp_path%%/*};
+		if [ -n "${loc_ftp_dir}" ]; then
+			echo "-mkdir ${loc_ftp_dir}";
+			echo "cd ${loc_ftp_dir}";
+		fi;
+		loc_ftp_path=${loc_ftp_path#*/};
+	done;
+}
 
 upload_file_ssh()
 {
@@ -63,21 +90,24 @@ upload_file_ssh()
 	fi;
 	
 	TMP_BATCH_FILE=$(mktemp);
-	#echo "progress" >> ${TMP_BATCH_FILE};
-	[ -n "${ftp_path}" ] && echo "-mkdir ${ftp_path}" >> ${TMP_BATCH_FILE};
-	echo "cd ${ftp_path}" >> ${TMP_BATCH_FILE};
-	echo "put ${ftp_local_file} ${ftp_path}" >> ${TMP_BATCH_FILE};
-	echo "quit" >> ${TMP_BATCH_FILE};
+	if [ -n "${ftp_path}" ]; then
+		echo "-mkdir /" >> "${TMP_BATCH_FILE}";
+		echo "cd /" >> "${TMP_BATCH_FILE}";
+		create_ftp_folders "${ftp_path}" >> "${TMP_BATCH_FILE}";
+	fi;
+	echo "cd ${ftp_path}" >> "${TMP_BATCH_FILE}";
+	echo "put ${ftp_local_file} ${ftp_path}" >> "${TMP_BATCH_FILE}";
+	echo "quit" >> "${TMP_BATCH_FILE}";
 	
 	if [ -z "${SSH_KEY}" ]; then
-		echo "${ftp_password}" >> ${CFG};
-		${SSHPASS} -f${CFG} ${SSH_SFTP} -C -oBatchMode=no -b ${TMP_BATCH_FILE} -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
+		echo "${ftp_password}" >> "${CFG}";
+		${SSHPASS} -f${CFG} ${SSH_SFTP} -C -oBatchMode=no -b "${TMP_BATCH_FILE}" -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
 	else
-		${SSH_SFTP} -C -oBatchMode=no -b ${TMP_BATCH_FILE} -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} -oIdentityFile=${SSH_KEY} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
+		${SSH_SFTP} -C -oBatchMode=no -b "${TMP_BATCH_FILE}" -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} -oIdentityFile=${SSH_KEY} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
 	fi;
 	RET=$?;
 	
-	[ -f "${TMP_BATCH_FILE}" ] && rm -f ${TMP_BATCH_FILE};
+	[ -f "${TMP_BATCH_FILE}" ] && rm -f "${TMP_BATCH_FILE}";
 	
 	if [ "${RET}" -ne 0 ]; then
 		echo "[upload] sftp return code: $RET";
@@ -139,47 +169,10 @@ $TOUCH $CFG
 
 RET=0;
 
-
 #######################################################
-TIMEOUT=120
-
-#dynamic timeout for nctpput.
-#Curl kicks the control connection with keep-alive pings by default.
-SIZE_GIG=0
-SECONDS_PER_GIG=120
-if [ -x ${DU} ]; then
-	if [ "${OS}" = "FreeBSD" ]; then
-		SIZE_GIG=`BLOCKSIZE=G ${DU} -A ${ftp_local_file} | cut -f1`
-	else
-		SIZE_GIG=`${DU} --apparent-size --block-size=1G ${ftp_local_file} | cut -f1`
-	fi
-
-	if [ "${SIZE_GIG}" -gt 1 ]; then
-		NEW_TIMEOUT=$TIMEOUT
-
-		if [ -x ${BC} ]; then
-			NEW_TIMEOUT=`echo "${SIZE_GIG} * ${SECONDS_PER_GIG}" | ${BC}`
-		elif [ -x ${EXPR} ]; then
-			NEW_TIMEOUT=`${EXPR} ${SIZE_GIG} \* ${SECONDS_PER_GIG}`
-		else
-			echo "Cannot find ${BC} nor ${EXPR} for ftp upload timeout change on large file: ${SIZE_GIG} Gig.";
-		fi
-
-		#make sure it's a useful number
-		if [ "${NEW_TIMEOUT}" -gt "${TIMEOUT}" ]; then
-			TIMEOUT=${NEW_TIMEOUT};
-		fi
-	fi
-fi
-
-#######################################################
-# FTPS
+# FTP
 upload_file_ftp()
 {
-        if [ ! -e ${CURL} ]; then
-                CURL=/usr/bin/curl
-        fi
-
         if [ ! -e ${CURL} ]; then
                 echo "";
                 echo "*** Backup not uploaded ***";
@@ -219,10 +212,6 @@ upload_file_ftp()
 upload_file_ftps()
 {
 	if [ ! -e ${CURL} ]; then
-		CURL=/usr/bin/curl
-	fi
-
-	if [ ! -e ${CURL} ]; then
 		echo "";
 		echo "*** Backup not uploaded ***";
 		echo "Please install curl by running:";
@@ -248,7 +237,7 @@ upload_file_ftps()
 		ftp_path=${ftp_path}/
 	fi
 
-	${CURL} --config ${CFG} --ftp-ssl-reqd -k --silent --show-error --ftp-create-dirs --upload-file $ftp_local_file  ftp://$ftp_ip:${PORT}/$ftp_path$ftp_remote_file 2>&1
+	${CURL} --config ${CFG} ${SSL_REQD} -k ${MIN_TLS} --silent --show-error --ftp-create-dirs --upload-file $ftp_local_file  ftp://$ftp_ip:${PORT}/$ftp_path$ftp_remote_file 2>&1
 	RET=$?
 
 	if [ "${RET}" -ne 0 ]; then

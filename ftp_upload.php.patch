@@ -1,6 +1,6 @@
---- a/ftp_upload-1.2.php	2019-07-30 16:46:50.000000000 +0700
-+++ b/ftp_upload-1.2.php	2019-09-13 00:02:04.204718764 +0700
-@@ -1,4 +1,13 @@
+--- a/ftp_upload.php	2019-10-24 04:05:41.000000000 +0700
++++ b/ftp_upload.php	2019-12-11 20:32:35.000000000 +0700
+@@ -1,4 +1,14 @@
  #!/bin/sh
 +# ===========================================================
 +# Original script was written by Directadmin
@@ -8,14 +8,15 @@
 +# Patched:
 +#  sFTP/SSH support added
 +#  By Alex Grebenschikov, Poralix, www.poralix.com
-+#  Last modified: Thu Sep 12 23:55:18 +07 2019
-+#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
++#  Last modified: Wed Dec 11 20:30:29 +07 2019
++#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
++#           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 +# ===========================================================
  VERSION=1.2
- FTPPUT=/usr/bin/ncftpput
  CURL=/usr/local/bin/curl
-@@ -15,6 +24,67 @@
- 	FTPS=1
+ if [ ! -e ${CURL} ]; then
+@@ -26,6 +36,84 @@
+     SSL_REQD="--ssl-reqd"
  fi
  
 +# Poralix
@@ -34,6 +35,21 @@
 +		break;
 +	fi;
 +done;
++
++create_ftp_folders()
++{
++	local loc_ftp_path;
++	local loc_ftp_dir;
++	loc_ftp_path="$@";
++	while [[ "${loc_ftp_path}" != "${loc_ftp_dir}" ]] ; do
++		loc_ftp_dir=${loc_ftp_path%%/*};
++		if [ -n "${loc_ftp_dir}" ]; then
++			echo "-mkdir ${loc_ftp_dir}";
++			echo "cd ${loc_ftp_dir}";
++		fi;
++		loc_ftp_path=${loc_ftp_path#*/};
++	done;
++}
 +
 +upload_file_ssh()
 +{
@@ -57,32 +73,34 @@
 +	fi;
 +	
 +	TMP_BATCH_FILE=$(mktemp);
-+	#echo "progress" >> ${TMP_BATCH_FILE};
-+	[ -n "${ftp_path}" ] && echo "-mkdir ${ftp_path}" >> ${TMP_BATCH_FILE};
-+	echo "cd ${ftp_path}" >> ${TMP_BATCH_FILE};
-+	echo "put ${ftp_local_file} ${ftp_path}" >> ${TMP_BATCH_FILE};
-+	echo "quit" >> ${TMP_BATCH_FILE};
++	if [ -n "${ftp_path}" ]; then
++		echo "-mkdir /" >> "${TMP_BATCH_FILE}";
++		echo "cd /" >> "${TMP_BATCH_FILE}";
++		create_ftp_folders "${ftp_path}" >> "${TMP_BATCH_FILE}";
++	fi;
++	echo "cd ${ftp_path}" >> "${TMP_BATCH_FILE}";
++	echo "put ${ftp_local_file} ${ftp_path}" >> "${TMP_BATCH_FILE}";
++	echo "quit" >> "${TMP_BATCH_FILE}";
 +	
 +	if [ -z "${SSH_KEY}" ]; then
-+		echo "${ftp_password}" >> ${CFG};
-+		${SSHPASS} -f${CFG} ${SSH_SFTP} -C -oBatchMode=no -b ${TMP_BATCH_FILE} -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
++		echo "${ftp_password}" >> "${CFG}";
++		${SSHPASS} -f${CFG} ${SSH_SFTP} -C -oBatchMode=no -b "${TMP_BATCH_FILE}" -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
 +	else
-+		${SSH_SFTP} -C -oBatchMode=no -b ${TMP_BATCH_FILE} -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} -oIdentityFile=${SSH_KEY} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
++		${SSH_SFTP} -C -oBatchMode=no -b "${TMP_BATCH_FILE}" -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oPort=${PORT} -oIdentityFile=${SSH_KEY} ${ftp_username}@${ftp_ip} >/dev/null 2>&1;
 +	fi;
 +	RET=$?;
 +	
-+	[ -f "${TMP_BATCH_FILE}" ] && rm -f ${TMP_BATCH_FILE};
++	[ -f "${TMP_BATCH_FILE}" ] && rm -f "${TMP_BATCH_FILE}";
 +	
 +	if [ "${RET}" -ne 0 ]; then
 +		echo "[upload] sftp return code: $RET";
 +	fi
 +}
 +# Poralix
-+
+ 
  #######################################################
  # SETUP
- 
-@@ -189,11 +259,15 @@
+@@ -160,11 +248,15 @@
  #######################################################
  # Start
  
@@ -102,7 +120,7 @@
  
  if [ "${RET}" = "0" ] && [ "${MD5}" = "1" ]; then
  	MD5_FILE=${ftp_local_file}.md5
-@@ -204,11 +278,15 @@
+@@ -175,11 +267,15 @@
  		ftp_local_file=${MD5_FILE}
  		ftp_remote_file=${ftp_remote_file}.md5
  

@@ -5,8 +5,9 @@
 # Patched:
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
-#  Last modified: Tue Jan 30 12:43:50 +07 2018
-#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
+#  Last modified: Wed Dec 11 20:30:29 +07 2019
+#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
+#           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 # ===========================================================
 
 TMPDIR="/home/tmp";
@@ -30,7 +31,6 @@ DUMP="${TMPDIR}/${RANDNUM}.dump";
 rm -f "${DUMP}";
 touch "${DUMP}";
 chmod 600 "${DUMP}";
-
 
 # Poralix
 SSH_SFTP="/usr/bin/sftp";

@@ -16,8 +16,8 @@ Alex Grebenschikov, Poralix, (www.poralix.com), 2018-2019
 
 ## Version
 
-- Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
-- Last modified: Thu Sep 12 23:55:18 +07 2019
+- Last modified: Wed Dec 11 20:30:29 +07 2019
+- Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
 - Repository URL: https://github.com/poralix/directadmin-sftp-backups
 - Report issues to URL: https://github.com/poralix/directadmin-sftp-backups/issues
 - Home page: www.poralix.com
@@ -26,6 +26,8 @@ Alex Grebenschikov, Poralix, (www.poralix.com), 2018-2019
 
 - Version: 0.1.poralix $ Tue Jan 30 12:43:50 +07 2018
 - Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019: Updated per changes in https://www.directadmin.com/features.php?id=2488
+- Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019: Recursive creation of FTP folders on remote server
+
 
 ## Requirements
 

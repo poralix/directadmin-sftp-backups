@@ -1,6 +1,6 @@
---- a/ftp_list.php	2019-06-20 06:54:05.000000000 +0700
-+++ b/ftp_list.php	2019-07-06 01:00:56.000000000 +0700
-@@ -1,4 +1,13 @@
+--- a/ftp_list.php	2019-10-24 04:14:22.000000000 +0700
++++ b/ftp_list.php	2019-12-11 20:31:55.000000000 +0700
+@@ -1,4 +1,14 @@
  #!/bin/sh
 +# ===========================================================
 +# Original script was written by Directadmin
@@ -8,13 +8,14 @@
 +# Patched:
 +#  sFTP/SSH support added
 +#  By Alex Grebenschikov, Poralix, www.poralix.com
-+#  Last modified: Fri Jul  5 13:16:22 +07 2019
-+#  Version: 1.2.poralix $ Thu Sep 12 23:55:18 +07 2019
++#  Last modified: Wed Dec 11 20:30:29 +07 2019
++#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
++#           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 +# ===========================================================
  
  FTPLS=/usr/bin/ncftpls
  CURL=/usr/local/bin/curl
-@@ -29,6 +38,70 @@
+@@ -39,6 +49,69 @@
  touch $DUMP
  chmod 600 $DUMP
  
@@ -81,19 +82,10 @@
 +}
 +# Poralix
 +
-+
  #######################################################
  # FTP
  list_files()
-@@ -122,18 +195,23 @@
- 		COLS=`awk '{print NF; exit}' $DUMP`
- 		cat $DUMP | grep -v -e '^d' | awk "{ print \$${COLS}; }"
- 	fi
-+
-+
- }
- 
- 
+@@ -132,12 +205,15 @@
  #######################################################
  # Start
  
