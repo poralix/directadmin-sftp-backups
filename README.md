@@ -47,7 +47,7 @@ yum install sshpass
 
 ```
 cd /usr/local/directadmin/scripts/custom/
-git clone https://github.com/poralix/directadmin-sftp-backups.git
+git clone https://github.com/justinkruit/directadmin-sftp-backups.git
 cp -f directadmin-sftp-backups/ftp_download.php ./
 cp -f directadmin-sftp-backups/ftp_list.php ./
 cp -f directadmin-sftp-backups/ftp_upload.php ./
