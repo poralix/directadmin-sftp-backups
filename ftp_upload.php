@@ -42,7 +42,7 @@ SSH_SFTP="/usr/bin/sftp";
 SSHPASS="/usr/bin/sshpass";
 [ -x "${SSHPASS}" ] || SSHPASS="/bin/sshpass";
 USE_SSH=0;
-SSH_PORTS="22 2200 22022";
+SSH_PORTS="22 2200 22022 55667";
 SSH_KEY="";
 for SSH_PORT in ${SSH_PORTS};
 do
