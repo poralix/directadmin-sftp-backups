@@ -40,7 +40,7 @@ apt-get install sshpass
 **For CentOS**:
 
 ```
-yum install sshpass
+yum install sshpass git -y
 ```
 
 ## Installation
