@@ -55,7 +55,7 @@ chmod 700 ftp_*.php
 chown diradmin:diradmin ftp_*.php
 ```
 
-If you are using a ssh key you need to change the user to which the script is run to the owner of the ssh key (see: https://www.directadmin.com/features.php?id=2854).
+If you are using a ssh key you need to change the user with which the script is being run to the owner of the ssh key (see: https://www.directadmin.com/features.php?id=2854).
 
 ## Usage
 
