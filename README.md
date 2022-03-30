@@ -55,6 +55,8 @@ chmod 700 ftp_*.php
 chown diradmin:diradmin ftp_*.php
 ```
 
+If you are using a ssh key you need to change the user to which the script is run to the owner of the ssh key (see: https://www.directadmin.com/features.php?id=2854).
+
 ## Usage
 
 Go to directadmin `Admin login -> Admin Backup/Transfer` and set:
@@ -63,6 +65,8 @@ Go to directadmin `Admin login -> Admin Backup/Transfer` and set:
 - Password: **real ssh password or full to SSH RSA key**
 - Remote Path: **full path to a backup directory from a remote server**
 - Port: **22**
+
+
 
 The script will detect the specified port **22** and will use SFTP to connect to SSH port. 
 If you want FTP/FTPS just change port to 21 and update other credentials (the same script 
