@@ -66,8 +66,6 @@ Go to directadmin `Admin login -> Admin Backup/Transfer` and set:
 - Remote Path: **full path to a backup directory from a remote server**
 - Port: **22**
 
-
-
 The script will detect the specified port **22** and will use SFTP to connect to SSH port. 
 If you want FTP/FTPS just change port to 21 and update other credentials (the same script 
 can be used for FTP/FTPS/SSH/SFTP).
