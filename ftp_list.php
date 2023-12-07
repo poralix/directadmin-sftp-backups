@@ -118,7 +118,7 @@ list_files_ssh()
 		# zstd=0 & backup_gzip=1 & encryption=1 => admin.root.admin.tar.gz.enc
 		# zstd=0 & backup_gzip=0 & encryption=1 => admin.root.admin.tar.enc
 		#
-		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.(tar)(|\.gz|\.zst)(|\.enc)$';
+		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.(tar|zstd)(|\.gz|\.zst)(|\.enc)$';
 	fi
 }
 # Poralix
