@@ -6,7 +6,8 @@
 #  sFTP/SSH support added
 #  By Alex Grebenschikov, Poralix, www.poralix.com
 #  Last modified: Wed Dec 11 20:30:29 +07 2019
-#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
+#  Version: 1.2.poralix.3 $ Thu Dec  7 18:54:17 +07 2023
+#           1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
 #           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 # ===========================================================
 
@@ -107,7 +108,17 @@ list_files_ssh()
 		echo "[list] sftp return code: $RET";
 		cat ${DUMP};
 	else
-		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.tar(|\.gz)(|\.enc)$';
+		# Backup file names might be of the following format:
+		# =======================================================================
+		# zstd=1 & backup_gzip=2 & encryption=0 => admin.root.admin.tar.zst
+		# zstd=0 & backup_gzip=1 & encryption=0 => admin.root.admin.tar.gz
+		# zstd=0 & backup_gzip=0 & encryption=0 => admin.root.admin.tar
+		#
+		# zstd=1 & backup_gzip=2 & encryption=1 => admin.root.admin.tar.zst.enc
+		# zstd=0 & backup_gzip=1 & encryption=1 => admin.root.admin.tar.gz.enc
+		# zstd=0 & backup_gzip=0 & encryption=1 => admin.root.admin.tar.enc
+		#
+		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.(tar)(|\.gz|\.zst)(|\.enc)$';
 	fi
 }
 # Poralix

@@ -1,7 +1,8 @@
---- a/ftp_upload.php	2019-10-24 04:05:41.000000000 +0700
-+++ b/ftp_upload.php	2019-12-11 20:32:35.000000000 +0700
-@@ -1,4 +1,14 @@
- #!/bin/sh
+--- a/ftp_upload.php	2023-12-04 23:32:55.263291573 +0700
++++ b/ftp_upload.php	2023-12-07 18:23:08.690772136 +0700
+@@ -1,15 +1,27 @@
+-#!/bin/bash
++#!/bin/sh
 +# ===========================================================
 +# Original script was written by Directadmin
 +# ===========================================================
@@ -15,10 +16,62 @@
  VERSION=1.2
  CURL=/usr/local/bin/curl
  if [ ! -e ${CURL} ]; then
-@@ -26,6 +36,84 @@
-     SSL_REQD="--ssl-reqd"
+ 		CURL=/usr/bin/curl
+ fi
++OS=`uname`;
+ DU=/usr/bin/du
+ BC=/usr/bin/bc
+ EXPR=/usr/bin/expr
+ TOUCH=/bin/touch
+ PORT=${ftp_port}
+ FTPS=0
++MIN_TLS="--tlsv1.1"
+ 
+ MD5=${ftp_md5}
+ 
+@@ -17,43 +29,91 @@
+ 	FTPS=1
  fi
  
+-CURL_TLS_HELP=$(${CURL} --help tls)
+-CURL_VERSION=$(${CURL} --version | head -n 1 | cut -d ' ' -f 2)
+-int_version() {
+-	local major minor patch
+-	major=$(cut -d . -f 1 <<< "$1")
+-	minor=$(cut -d . -f 2 <<< "$1")
+-	patch=$(cut -d . -f 3 <<< "$1")
+-	printf "%03d%03d%03d" "${major}" "${minor}" "${patch}"
+-}
++SSL_REQD=""
++if ${CURL} --help | grep -m1 -q 'ftp-ssl-reqd'; then
++    SSL_REQD="--ftp-ssl-reqd"
++elif ${CURL} --help | grep -m1 -q 'ssl-reqd'; then
++    SSL_REQD="--ssl-reqd"
++fi
+ 
+-SSL_ARGS=""
+-if grep -q 'ftp-ssl-reqd' <<< "${CURL_TLS_HELP}"; then
+-    SSL_ARGS="${SSL_ARGS} --ftp-ssl-reqd"
+-elif grep -q 'ssl-reqd' <<< "${CURL_TLS_HELP}"; then
+-    SSL_ARGS="${SSL_ARGS} --ssl-reqd"
+-fi
+-
+-# curl 7.77.0 fixed gnutls ignoring --tls-max if --tlsv1.x was not specified.
+-# https://curl.se/bug/?i=6998
+-#
+-# curl 7.61.0 fixes for openssl to treat --tlsv1.x as minimum required version instead of exact version
+-# https://curl.se/bug/?i=2691
+-#
+-# curl 7.54.0 introduced --max-tls option and changed --tlsv1.x behaviur to be min version
+-# https://curl.se/bug/?i=1166
+-if [ "$(int_version "${CURL_VERSION}")" -ge "$(int_version '7.54.0')" ]; then
+-	SSL_ARGS="${SSL_ARGS} --tlsv1.1"
+-fi
+-
+-# curl 7.78.0 fixed FTP upload TLS 1.3 bug, we add `--tls-max 1.2` for older versions.
+-# https://curl.se/bug/?i=7095
+-if [ "$(int_version "${CURL_VERSION}")" -lt "$(int_version '7.78.0')" ] && grep -q 'tls-max' <<< "${CURL_TLS_HELP}"; then
+-	SSL_ARGS="${SSL_ARGS} --tls-max 1.2"
 +# Poralix
 +SSH_SFTP="/usr/bin/sftp";
 +[ -x "${SSH_SFTP}" ] || SSH_SFTP="/bin/sftp";
@@ -35,7 +88,10 @@
 +		break;
 +	fi;
 +done;
-+
+ 
+-	# curls older than 7.61.0 needs --tlsv.x parameter for --tls-max to work correctly
+-	# https://curl.se/bug/?i=2571 - openssl: acknowledge --tls-max for default version too
+-fi
 +create_ftp_folders()
 +{
 +	local loc_ftp_path;
@@ -100,7 +156,78 @@
  
  #######################################################
  # SETUP
-@@ -160,11 +248,15 @@
+@@ -78,7 +138,11 @@
+ get_md5() {
+ 	MF=$1
+ 
+-	MD5SUM=/usr/bin/md5sum
++	if [ ${OS} = "FreeBSD" ]; then
++		MD5SUM=/sbin/md5
++	else
++		MD5SUM=/usr/bin/md5sum
++	fi
+ 	if [ ! -x ${MD5SUM} ]; then
+ 		return
+ 	fi
+@@ -87,7 +151,11 @@
+ 		return
+ 	fi
+ 
+-	FMD5=`$MD5SUM $MF | cut -d\  -f1`
++	if [ ${OS} = "FreeBSD" ]; then
++		FMD5=`$MD5SUM -q $MF`
++	else
++		FMD5=`$MD5SUM $MF | cut -d\  -f1`
++	fi
+ 
+ 	echo "${FMD5}"
+ }
+@@ -108,12 +176,15 @@
+         if [ ! -e ${CURL} ]; then
+                 echo "";
+                 echo "*** Backup not uploaded ***";
+-                echo "Please install curl";
++                echo "Please install curl by running:";
++                echo "";
++                echo "cd /usr/local/directadmin/custombuild";
++                echo "./build curl";
+                 echo "";
+                 exit 10;
+         fi
+ 
+-        /bin/echo "user =  \"$ftp_username:$ftp_password_esc_double_quote\"" >> $CFG
++        /bin/echo "user =  \"$ftp_username:$ftp_password\"" >> $CFG
+ 
+         if [ ! -s ${CFG} ]; then
+                 echo "${CFG} is empty. curl is not going to be happy about it.";
+@@ -143,12 +214,15 @@
+ 	if [ ! -e ${CURL} ]; then
+ 		echo "";
+ 		echo "*** Backup not uploaded ***";
+-		echo "Please install curl";
++		echo "Please install curl by running:";
++		echo "";
++		echo "cd /usr/local/directadmin/custombuild";
++		echo "./build curl";
+ 		echo "";
+ 		exit 10;
+ 	fi
+ 
+-	/bin/echo "user =  \"$ftp_username:$ftp_password_esc_double_quote\"" >> $CFG
++	/bin/echo "user =  \"$ftp_username:$ftp_password\"" >> $CFG
+ 
+ 	if [ ! -s ${CFG} ]; then
+ 		echo "${CFG} is empty. curl is not going to be happy about it.";
+@@ -163,7 +237,7 @@
+ 		ftp_path=${ftp_path}/
+ 	fi
+ 
+-	${CURL} --config ${CFG} ${SSL_ARGS} -k --silent --show-error --ftp-create-dirs --upload-file $ftp_local_file  ftp://$ftp_ip:${PORT}/$ftp_path$ftp_remote_file 2>&1
++	${CURL} --config ${CFG} ${SSL_REQD} -k ${MIN_TLS} --silent --show-error --ftp-create-dirs --upload-file $ftp_local_file  ftp://$ftp_ip:${PORT}/$ftp_path$ftp_remote_file 2>&1
+ 	RET=$?
+ 
+ 	if [ "${RET}" -ne 0 ]; then
+@@ -174,11 +248,15 @@
  #######################################################
  # Start
  
@@ -120,7 +247,7 @@
  
  if [ "${RET}" = "0" ] && [ "${MD5}" = "1" ]; then
  	MD5_FILE=${ftp_local_file}.md5
-@@ -175,11 +267,15 @@
+@@ -189,11 +267,15 @@
  		ftp_local_file=${MD5_FILE}
  		ftp_remote_file=${ftp_remote_file}.md5
  

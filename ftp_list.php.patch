@@ -1,7 +1,8 @@
---- a/ftp_list.php	2019-10-24 04:14:22.000000000 +0700
-+++ b/ftp_list.php	2019-12-11 20:31:55.000000000 +0700
-@@ -1,4 +1,14 @@
- #!/bin/sh
+--- a/ftp_list.php	2023-12-04 23:32:55.269291830 +0700
++++ b/ftp_list.php	2023-12-07 19:03:35.511065373 +0700
+@@ -1,5 +1,17 @@
+-#!/bin/bash
++#!/bin/sh
 +# ===========================================================
 +# Original script was written by Directadmin
 +# ===========================================================
@@ -9,13 +10,71 @@
 +#  sFTP/SSH support added
 +#  By Alex Grebenschikov, Poralix, www.poralix.com
 +#  Last modified: Wed Dec 11 20:30:29 +07 2019
-+#  Version: 1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
++#  Version: 1.2.poralix.3 $ Thu Dec  7 18:54:17 +07 2023
++#           1.2.poralix.2 $ Wed Dec 11 20:30:29 +07 2019
 +#           1.2.poralix   $ Thu Sep 12 23:55:18 +07 2019
 +# ===========================================================
  
- FTPLS=/usr/bin/ncftpls
++FTPLS=/usr/bin/ncftpls
  CURL=/usr/local/bin/curl
-@@ -39,6 +49,69 @@
+ if [ ! -e ${CURL} ]; then
+ 	CURL=/usr/bin/curl
+@@ -10,49 +22,12 @@
+ if [ "${ftp_secure}" = "ftps" ]; then
+ 	FTPS=1
+ fi
+-SHOW_BYTES=0
+-if [ "${ftp_show_bytes}" = "yes" ]; then
+-	SHOW_BYTES=1
+-fi
+-
+-int_version() {
+-        local major minor patch
+-        major=$(cut -d . -f 1 <<< "$1")
+-        minor=$(cut -d . -f 2 <<< "$1")
+-        patch=$(cut -d . -f 3 <<< "$1")
+-        printf "%03d%03d%03d" "${major}" "${minor}" "${patch}"
+-}
+-
+-SSL_ARGS=""
+-if [ "$FTPS" != "0" ]; then
+-	CURL_TLS_HELP=$(${CURL} --help tls)
+-	CURL_VERSION=$(${CURL} --version | head -n 1 | cut -d ' ' -f 2)
+-
+-	if grep -q 'ftp-ssl-reqd' <<< "${CURL_TLS_HELP}"; then
+-		SSL_ARGS="${SSL_ARGS} --ftp-ssl-reqd"
+-	elif grep -q 'ssl-reqd' <<< "${CURL_TLS_HELP}"; then
+-		SSL_ARGS="${SSL_ARGS} --ssl-reqd"
+-	fi
+-	# curl 7.77.0 fixed gnutls ignoring --tls-max if --tlsv1.x was not specified.
+-	# https://curl.se/bug/?i=6998
+-	#
+-	# curl 7.61.0 fixes for openssl to treat --tlsv1.x as minimum required version instead of exact version
+-	# https://curl.se/bug/?i=2691
+-	#
+-	# curl 7.54.0 introduced --max-tls option and changed --tlsv1.x behaviur to be min version
+-	# https://curl.se/bug/?i=1166
+-	if [ "$(int_version "${CURL_VERSION}")" -ge "$(int_version '7.54.0')" ]; then
+-		SSL_ARGS="${SSL_ARGS} --tlsv1.1"
+-	fi
+-
+-	# curl 7.78.0 fixed FTP upload TLS 1.3 bug, we add `--tls-max 1.2` for older versions.
+-	# https://curl.se/bug/?i=7095
+-	if [ "$(int_version "${CURL_VERSION}")" -lt "$(int_version '7.78.0')" ] && grep -q 'tls-max' <<< "${CURL_TLS_HELP}"; then
+-		SSL_ARGS="${SSL_ARGS} --tls-max 1.2"
+-		# curls older than 7.61.0 needs --tlsv.x parameter for --tls-max to work correctly
+-		# https://curl.se/bug/?i=2571 - openssl: acknowledge --tls-max for default version too
+-	fi
+ 
++SSL_REQD=""
++if ${CURL} --help | grep -m1 -q 'ftp-ssl-reqd'; then
++    SSL_REQD="--ftp-ssl-reqd"
++elif ${CURL} --help | grep -m1 -q 'ssl-reqd'; then
++    SSL_REQD="--ssl-reqd"
+ fi
+ 
+ if [ "$PORT" = "" ]; then
+@@ -75,14 +50,145 @@
  touch $DUMP
  chmod 600 $DUMP
  
@@ -77,7 +136,17 @@
 +		echo "[list] sftp return code: $RET";
 +		cat ${DUMP};
 +	else
-+		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.tar(|\.gz)(|\.enc)$';
++		# Backup file names might be of the following format:
++		# =======================================================================
++		# zstd=1 & backup_gzip=2 & encryption=0 => admin.root.admin.tar.zst
++		# zstd=0 & backup_gzip=1 & encryption=0 => admin.root.admin.tar.gz
++		# zstd=0 & backup_gzip=0 & encryption=0 => admin.root.admin.tar
++		#
++		# zstd=1 & backup_gzip=2 & encryption=1 => admin.root.admin.tar.zst.enc
++		# zstd=0 & backup_gzip=1 & encryption=1 => admin.root.admin.tar.gz.enc
++		# zstd=0 & backup_gzip=0 & encryption=1 => admin.root.admin.tar.enc
++		#
++		cat ${DUMP} | grep -v '^sftp> ' | grep -E '(.*)\.(tar)(|\.gz|\.zst)(|\.enc)$';
 +	fi
 +}
 +# Poralix
@@ -85,18 +154,106 @@
  #######################################################
  # FTP
  list_files()
-@@ -132,12 +205,15 @@
+ {
++	if [ ! -e $FTPLS ]; then
++		echo "";
++		echo "*** Unable to get list ***";
++		echo "Please install $FTPLS by running:";
++		echo "";
++		echo "cd /usr/local/directadmin/scripts";
++		echo "./ncftp.sh";
++		echo "";
++		exit 10;
++	fi
++
++	#man ncftpls lists:
++	#If you want to use absolute pathnames, you need to include a literal slash, using the "%2F" code for a "/" character.
++	#use expr to replace /path to /%2Fpath, if needed.
++	CHAR1=`echo ${ftp_path} | awk '{print substr($1,1,1)}'`
++	if [ "$CHAR1" = "/" ]; then
++		new_path="/%2F`echo ${ftp_path} | awk '{print substr($1,1)}'`"
++		ftp_path=${new_path}
++	else
++		ftp_path="/${ftp_path}"
++	fi
++
++	echo "host $ftp_ip" >> $CFG
++	echo "user $ftp_username" >> $CFG
++	echo "pass $ftp_password" >> $CFG
++
++	if [ ! -s $CFG ]; then
++		echo "ftp config file $CFG is 0 bytes.  Make sure $TMPDIR is chmod 1777 and that this is enough disk space.";
++		echo "running as: `id`";
++		df -h
++		exit 11;
++	fi
++
++	$FTPLS -l -f $CFG -P ${PORT} -r 1 -t 10 "ftp://${ftp_ip}${ftp_path}" > $DUMP 2>&1
++	RET=$?
++
++	if [ "$RET" -ne 0 ]; then
++		cat $DUMP
++
++		if [ "$RET" -eq 3 ]; then
++			echo "Transfer failed. Check the path value. (error=$RET)";
++		else
++			echo "${FTPLS} returned error code $RET";
++		fi
++
++	else
++		COLS=`awk '{print NF; exit}' $DUMP`
++		cat $DUMP | grep -v -e '^d' | awk "{ print \$${COLS}; }"
++	fi
++}
++
++#######################################################
++# FTPS
++list_files_ftps()
++{
+ 	if [ ! -e ${CURL} ]; then
+ 		echo "";
+ 		echo "*** Unable to get list ***";
+-		echo "Please install curl";
++		echo "Please install curl by running:";
++		echo "";
++		echo "cd /usr/local/directadmin/custombuild";
++		echo "./build curl";
+ 		echo "";
+ 		exit 10;
+ 	fi
+@@ -92,9 +198,9 @@
+ 	#without double forward slashes, the path is relative to the login location, which might not be correct.
+ 	ftp_path="/${ftp_path}"
+ 
+-	/bin/echo "user =  \"$ftp_username:$ftp_password_esc_double_quote\"" >> $CFG
++	/bin/echo "user =  \"$ftp_username:$ftp_password\"" >> $CFG
+ 
+-	${CURL} --config ${CFG} ${SSL_ARGS} -k --silent --show-error ftp://$ftp_ip:${PORT}$ftp_path/ > ${DUMP} 2>&1
++	${CURL} --config ${CFG} ${SSL_REQD} -k --silent --show-error ftp://$ftp_ip:${PORT}$ftp_path/ > ${DUMP} 2>&1
+ 	RET=$?
+ 
+ 	if [ "$RET" -ne 0 ]; then
+@@ -102,11 +208,7 @@
+ 		cat $DUMP
+ 	else
+ 		COLS=`awk '{print NF; exit}' $DUMP`
+-		if [ "${SHOW_BYTES}" = "1" ] && [ "${COLS}" = "9" ]; then
+-			cat $DUMP | grep -v -e '^d' | awk "{ print \$${COLS} \"=\" \$5; }"
+-		else
+-			cat $DUMP | grep -v -e '^d' | awk "{ print \$${COLS}; }"
+-		fi
++		cat $DUMP | grep -v -e '^d' | awk "{ print \$${COLS}; }"
+ 	fi
+ }
+ 
+@@ -114,7 +216,15 @@
  #######################################################
  # Start
  
--if [ "${FTPS}" = "1" ]; then
--	list_files_ftps
+-list_files
 +if [ "${USE_SSH}" = "1" ]; then
 +	list_files_ssh;
- else
--	list_files
--fi
--
++else
 +	if [ "${FTPS}" = "1" ]; then
 +		list_files_ftps
 +	else
