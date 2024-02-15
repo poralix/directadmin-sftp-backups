@@ -55,6 +55,8 @@ chmod 700 ftp_*.php
 chown diradmin:diradmin ftp_*.php
 ```
 
+If you are using a ssh key you need to change the user with which the script is being run to the owner of the ssh key (see: https://www.directadmin.com/features.php?id=2854).
+
 ## Usage
 
 Go to directadmin `Admin login -> Admin Backup/Transfer` and set:
